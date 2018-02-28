@@ -3,9 +3,12 @@ package signalr
 import (
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -112,6 +115,9 @@ type Client struct {
 
 	// User-defined custom parameters passed with each request to the server.
 	Params map[string]string
+
+	GroupsToken string
+	MessageID   string
 
 	// The HTTPClient used to initialize the websocket connection.
 	HTTPClient *http.Client
@@ -238,9 +244,18 @@ func makeURL(command string, c *Client) url.URL {
 		u.Path += "/start"
 	}
 
+	if u.Scheme != "http" && u.Scheme != "https" {
+		params.Set("tid", fmt.Sprintf("%.0f", math.Floor(rand.Float64()*11)))
+		if c.GroupsToken != "" {
+			params.Set("groupsToken", c.GroupsToken)
+		}
+		if c.MessageID != "" {
+			params.Set("messageId", c.MessageID)
+		}
+	}
+
 	// Set the parameters.
 	u.RawQuery = params.Encode()
-
 	return u
 }
 
@@ -765,7 +780,7 @@ func (c *Client) processReadMessagesError(err error, msgCh chan Message, errCh c
 	return ok
 }
 
-func processReadMessagesMessage(p []byte, msgs chan Message, errs chan error) {
+func processReadMessagesMessage(p []byte, msgs chan Message, errs chan error) (groupsToken string, messageID string) {
 	// Ignore KeepAlive messages.
 	if len(p) == 2 && p[0] == '{' && p[1] == '}' {
 		return
@@ -777,8 +792,10 @@ func processReadMessagesMessage(p []byte, msgs chan Message, errs chan error) {
 		errs <- errors.Wrap(err, "json unmarshal failed")
 		return
 	}
-
+	messageID = msg.C
+	groupsToken = msg.G
 	msgs <- msg
+	return
 }
 
 func (c *Client) readMessage(msgCh chan Message, errCh chan error) bool {
@@ -819,7 +836,13 @@ func (c *Client) readMessage(msgCh chan Message, errCh chan error) bool {
 	case err := <-errs:
 		ok = c.processReadMessagesError(err, msgCh, errCh)
 	case p := <-pCh:
-		processReadMessagesMessage(p, msgCh, errCh)
+		groupsToken, messageID := processReadMessagesMessage(p, msgCh, errCh)
+		if groupsToken != "" {
+			c.GroupsToken = groupsToken
+		}
+		if messageID != "" {
+			c.MessageID = messageID
+		}
 	case <-c.close:
 		ok = false
 	}
@@ -887,6 +910,8 @@ func New(host, protocol, endpoint, connectionData string, params map[string]stri
 		HTTPClient:          httpClient,
 		Headers:             make(map[string]string),
 		Params:              params,
+		GroupsToken:         "",
+		MessageID:           "",
 		Scheme:              HTTPS,
 		MaxNegotiateRetries: 5,
 		MaxConnectRetries:   5,
