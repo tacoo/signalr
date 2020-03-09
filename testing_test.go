@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/carterjones/signalr"
 	"github.com/gorilla/websocket"
+	"github.com/tacoo/signalr"
 )
 
 // This is some testception right here...
