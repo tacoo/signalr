@@ -19,7 +19,7 @@ import (
 
 	scraper "github.com/carterjones/go-cloudflare-scraper"
 	"github.com/gorilla/websocket"
-	jsoniter "github.com/json-iterator/go"
+	// jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/tacoo/signalr/hubs"
 )
