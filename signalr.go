@@ -308,7 +308,8 @@ func (c *Client) processNegotiateResponse(body io.ReadCloser) (err error) {
 		TransportConnectTimeout float64
 		LongPollDelay           float64
 	}{}
-	err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(data, &parsed)
+	// err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(data, &parsed)
+	err = json.Unmarshal(data, &parsed)
 	if err != nil {
 		return errors.Wrap(err, "json unmarshal failed")
 	}
@@ -537,7 +538,8 @@ func (c *Client) processStartResponse(body io.ReadCloser, conn WebsocketConn) (e
 
 	// Create an anonymous struct to parse the response.
 	parsed := struct{ Response string }{}
-	err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(data, &parsed)
+	// err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(data, &parsed)
+	err = json.Unmarshal(data, &parsed)
 	if err != nil {
 		return errors.Wrap(err, "json unmarshal failed")
 	}
@@ -562,7 +564,8 @@ func (c *Client) processStartResponse(body io.ReadCloser, conn WebsocketConn) (e
 
 	// Extract the server message.
 	var pcm Message
-	err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(p, &pcm)
+	// err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(p, &pcm)
+	err = json.Unmarshal(p, &pcm)
 	if err != nil {
 		return errors.Wrap(err, "json unmarshal failed")
 	}
@@ -788,7 +791,8 @@ func processReadMessagesMessage(p []byte, msgs chan Message, errs chan error) (g
 	}
 
 	var msg Message
-	err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(p, &msg)
+	// err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(p, &msg)
+	err := json.Unmarshal(p, &msg)
 	if err != nil {
 		errs <- errors.Wrap(err, "json unmarshal failed")
 		return
